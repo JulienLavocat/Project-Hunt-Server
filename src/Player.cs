@@ -10,6 +10,13 @@ namespace Hunt
 		private Player target;
 		private float health;
 
+		public Player(IdentificationPacket p)
+		{
+			name = p.name;
+			id = p.id;
+			health = 100.0f;
+		}
+
 		public string GetName()
 		{
 			return name;
