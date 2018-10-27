@@ -20,6 +20,15 @@ namespace Hunt
 			return w;
 		}
 
+		public static NetDataWriter CreateTargetChange(string target)
+		{
+			NetDataWriter w = new NetDataWriter();
+			w.Put((byte)1);
+			w.Put(target);
+			return w;
+		}
+
+
 		public static IdentificationPacket GetIdentification(byte[] data)
 		{
 			IdentificationPacket p = new IdentificationPacket();

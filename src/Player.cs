@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LiteNetLib;
+using System;
 
 namespace Hunt
 {
@@ -9,12 +10,14 @@ namespace Hunt
 		private Guid id;
 		private Player target;
 		private float health;
+		private NetPeer peer;
 
-		public Player(IdentificationPacket p)
+		public Player(IdentificationPacket p, NetPeer peer)
 		{
 			name = p.name;
 			id = p.id;
 			health = 100.0f;
+			this.peer = peer;
 		}
 
 		public string GetName()
@@ -46,6 +49,9 @@ namespace Hunt
 			health -= amount;
 			return health <= 0;
 		}
-
+		public NetPeer GetPeer()
+		{
+			return peer;
+		}
 	}
 }

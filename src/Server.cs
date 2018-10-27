@@ -18,9 +18,10 @@ namespace Hunt
 		private const int tickRate = 20;
 		private const int tickTime = 1000 / tickRate;
 
+		public static Dictionary<long, Player> players;
+
 		private static NetManager server;
 		private static EventBasedNetListener listener;
-		private static Dictionary<long, Player> players; 
 
 		public static void Start()
 		{
@@ -68,7 +69,7 @@ namespace Hunt
 					IdentificationPacket identificationPacket = Packets.GetIdentification(data.GetRemainingBytes());
 					Console.WriteLine("Player {0} is logged in with id {1}", identificationPacket.name, identificationPacket.id);
 
-					players.Add(peer.ConnectId, new Player(identificationPacket));
+					players.Add(peer.ConnectId, new Player(identificationPacket, peer));
 					return;
 				}
 				
