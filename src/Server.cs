@@ -13,10 +13,10 @@ namespace Hunt
 
 	class Server
 	{
+		public const int tickTime = 1000 / tickRate;
 
 		private const string Connect_Key = "projectHuntConnectionKey";
 		private const int tickRate = 20;
-		private const int tickTime = 1000 / tickRate;
 
 		public static Dictionary<long, Player> players;
 
@@ -27,7 +27,7 @@ namespace Hunt
 		{
 
 			listener = new EventBasedNetListener();
-			server = new NetManager(listener, 12, Connect_Key);
+			server = new NetManager(listener, 13, Connect_Key);
 			players = new Dictionary<long, Player>();
 
 			SetupListeners();
@@ -58,6 +58,8 @@ namespace Hunt
 			listener.PeerDisconnectedEvent += (peer, reason) =>
 			{
 				Console.WriteLine("Peer {0} disconnected", peer.EndPoint);
+				if (players.ContainsKey(peer.ConnectId))
+					players.Remove(peer.ConnectId);
 			};
 
 			listener.NetworkReceiveEvent += (peer, data) =>
@@ -109,6 +111,7 @@ namespace Hunt
 			Stopwatch watch = new Stopwatch();
 
 			int tickCount = 0;
+			long lastDeltaTime = 0;
 
 			while(true) {
 
@@ -116,11 +119,11 @@ namespace Hunt
 
 					server.PollEvents();
 					tickCount++;
-					Game.Update();
+					Game.Update(lastDeltaTime);
 					//SendSnapshotToAll(TakeSnapshot());
 		
 				watch.Stop();
-
+				lastDeltaTime = watch.ElapsedMilliseconds;
 				int delta = tickTime - (int)watch.ElapsedMilliseconds;
 				
 				if (delta <= 0)
