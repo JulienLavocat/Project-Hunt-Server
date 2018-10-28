@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Hunt
@@ -11,8 +12,10 @@ namespace Hunt
 	{
 
 		private static int tick = 0;
-		private static long time = 0;	//Time since server has started
-		private static bool targetAssignmentRequired = true;
+		private static int lastPlayerCount = 0;
+		private static long time = 0;   //Time since server has started
+		private static long targetAssignedSince;
+		private static bool targetNeverAssigned = true;
 		private static State state = State.WAITTING;
 
 		public static void Update(long deltaTime)
@@ -22,31 +25,53 @@ namespace Hunt
 
 			switch(state)
 			{
-				case State.WAITTING:	//In this state, server wait to have a sufisant amount of players connected to start the game
-
-
-
+				case State.WAITTING:    //In this state, server wait to have a sufisant amount of players connected to start the game
+					UpdateWaittingState(deltaTime);
 					break;
 				case State.STARTED:
+					UpdateStartedState(deltaTime);
 					break;
 				case State.ENDED:
+					UpdateEndedState(deltaTime);
 					break;
 			}
 
-			targetAssignmentRequired = (tick * Server.tickTime) % 30 == 0;
-
-			if(targetAssignmentRequired)
-			{
-				AssignTargets();
-			}
+			Thread.Sleep(10);
 
 		}
 
-		public static void AssignTargets()
+		private static void UpdateWaittingState(long deltaTime)
 		{
-			if (Server.players.Count <= 6)
-				return;
+			if (Server.players.Count >= 6)
+				state = State.STARTED;
 
+
+			//TODO Setup players for game start
+
+		}
+
+		private static void UpdateStartedState(long deltaTime)
+		{
+			if (IsTargetAssignmentRequired(deltaTime))
+				AssignTargets();
+		}
+
+		private static void UpdateEndedState(long deltaTime)
+		{
+			
+		}
+
+		private static bool IsTargetAssignmentRequired(long deltaTime)
+		{
+			targetAssignedSince += deltaTime;
+			return targetAssignedSince >= 3000 || targetNeverAssigned;	//Target re-assigned every 30 seconds;
+		}
+
+		private static void AssignTargets()
+		{
+			targetNeverAssigned = false;
+			targetAssignedSince = 0;
+			Log("Reassigning targets at time: " + time);
 			Random r = new Random();
 
 			List<Player> players = Server.players.Values.ToList();
@@ -64,11 +89,14 @@ namespace Hunt
 				player.SetTarget(newTarget);
 
 				Console.WriteLine(player.GetName() + " target is now: " + newTarget.GetName());
-				player.GetPeer().Send(Packets.CreateTargetChange(newTarget.GetName()), SendOptions.ReliableOrdered);
+				player.GetPeer().Send(Packets.CreateTargetChange(newTarget.GetName()), DeliveryMethod.ReliableOrdered);
 			}
-			targetAssignmentRequired = false;
 		}
 
+		private static void Log(string msg)
+		{
+			Console.WriteLine("[Game] " + msg);
+		}
 	}
 
 }

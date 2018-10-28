@@ -15,7 +15,6 @@ namespace Hunt
 	{
 		public const int tickTime = 1000 / tickRate;
 
-		private const string Connect_Key = "projectHuntConnectionKey";
 		private const int tickRate = 20;
 
 		public static Dictionary<long, Player> players;
@@ -27,7 +26,7 @@ namespace Hunt
 		{
 
 			listener = new EventBasedNetListener();
-			server = new NetManager(listener, 13, Connect_Key);
+			server = new NetManager(listener);
 			players = new Dictionary<long, Player>();
 
 			SetupListeners();
@@ -45,38 +44,54 @@ namespace Hunt
 
 			listener.NetworkLatencyUpdateEvent += (peer, latency) =>
 			{
-				//Console.WriteLine("Client {0} latency was updated to {1}", peer.ConnectId, latency);
+				//Console.WriteLine("Client {0} latency was updated to {1}", peer.Id, latency);
+			};
+
+			listener.ConnectionRequestEvent += rq =>
+			{
+				NetPeer peer;
+				if (server.PeersCount <= 14 /* max connections */)
+					peer = rq.Accept();
+				else
+				{
+					rq.Reject();
+					return;
+				}
+					
+				IdentificationPacket p = Packets.GetIdentification(rq.Data.GetRemainingBytes());
+				players.Add(peer.Id, new Player(p, peer));
+				Log("Player " + p.name + " is logged in with id " + p.id);
 			};
 
 			listener.PeerConnectedEvent += (peer) =>
 			{
 
-				Console.WriteLine("Peer ({0}) connected, waiting for identification.", peer.EndPoint.ToString());
 				
+
 			};
 
 			listener.PeerDisconnectedEvent += (peer, reason) =>
 			{
-				Console.WriteLine("Peer {0} disconnected", peer.EndPoint);
-				if (players.ContainsKey(peer.ConnectId))
-					players.Remove(peer.ConnectId);
+				Log("Peer " + peer.EndPoint + " disconnected");
+				if (players.ContainsKey(peer.Id))
+					players.Remove(peer.Id);
 			};
 
-			listener.NetworkReceiveEvent += (peer, data) =>
+			listener.NetworkReceiveEvent += (peer, data, method) =>
 			{
 				byte opCode = data.GetByte();
 
 				if(opCode == 0)	//Identification packet => (int) nameLength; (string) name; (byte[]) uuid
 				{
 					IdentificationPacket identificationPacket = Packets.GetIdentification(data.GetRemainingBytes());
-					Console.WriteLine("Player {0} is logged in with id {1}", identificationPacket.name, identificationPacket.id);
+					
 
-					players.Add(peer.ConnectId, new Player(identificationPacket, peer));
+				
 					return;
 				}
 				
 				Player p;
-				players.TryGetValue(peer.ConnectId, out p);
+				players.TryGetValue(peer.Id, out p);
 				if (p == null)
 				{
 					server.DisconnectPeer(peer, Encoding.Unicode.GetBytes("Protocol error. Player must sent identification packet."));
@@ -87,7 +102,7 @@ namespace Hunt
 				{
 					case 1:     //Chat message packet => (int) messageLength; (string) message; (int -> cast to enum) recipients
 						string msg = Packets.GetChatMsg(data.GetRemainingBytes());
-						SendToAll(Packets.CreateChat(p.GetName(), msg), SendOptions.ReliableOrdered);
+						SendToAll(Packets.CreateChat(p.GetName(), msg), DeliveryMethod.ReliableOrdered);
 						break;
 
 					case 2:		//Position update packet => (transform/compressed) transform; (int) movedAtTick
@@ -106,26 +121,24 @@ namespace Hunt
 
 		public static void Run()
 		{
-			Console.WriteLine("Server running at {0}hz", tickRate);
+			Log("Running at " + tickRate + "hz");
 
 			Stopwatch watch = new Stopwatch();
 
-			int tickCount = 0;
-			long lastDeltaTime = 0;
+			int delta = 0;
 
 			while(true) {
 
 				watch.Restart();
 
 					server.PollEvents();
-					tickCount++;
-					Game.Update(lastDeltaTime);
+					Game.Update(delta);
 					//SendSnapshotToAll(TakeSnapshot());
-		
+
 				watch.Stop();
-				lastDeltaTime = watch.ElapsedMilliseconds;
-				int delta = tickTime - (int)watch.ElapsedMilliseconds;
-				
+
+				delta = tickTime - (int)watch.ElapsedMilliseconds;
+
 				if (delta <= 0)
 					continue;
 				Thread.Sleep(delta);
@@ -138,10 +151,15 @@ namespace Hunt
 			return new byte[] { 0 };
 		}
 
-		public static void SendToAll(NetDataWriter data, SendOptions option)
+		public static void SendToAll(NetDataWriter data, DeliveryMethod option)
 		{
-			foreach (NetPeer peer in server.GetPeers())
+			foreach (NetPeer peer in server.GetPeers(ConnectionState.Connected))
 				peer.Send(data, option);
+		}
+
+		private static void Log(String msg)
+		{
+			Console.WriteLine("[Server] " + msg);
 		}
 
 	}

@@ -12,7 +12,7 @@ namespace Hunt
 		{
 
 			Server.Start();
-			Console.WriteLine("Project Hunt server started.");
+			Console.WriteLine("[Server] Project Hunt server started.");
 			Server.Run();
 
 		}
