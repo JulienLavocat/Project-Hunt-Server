@@ -64,7 +64,7 @@ namespace Hunt
 		private static bool IsTargetAssignmentRequired(long deltaTime)
 		{
 			targetAssignedSince += deltaTime;
-			return targetAssignedSince >= 3000 || targetNeverAssigned;	//Target re-assigned every 30 seconds;
+			return targetAssignedSince >= 10000 || targetNeverAssigned;	//Target re-assigned every 30 seconds;
 		}
 
 		private static void AssignTargets()
@@ -88,7 +88,6 @@ namespace Hunt
 				left.Remove(newTarget);
 				player.SetTarget(newTarget);
 
-				Console.WriteLine(player.GetName() + " target is now: " + newTarget.GetName());
 				player.GetPeer().Send(Packets.CreateTargetChange(newTarget.GetName()), DeliveryMethod.ReliableOrdered);
 			}
 		}

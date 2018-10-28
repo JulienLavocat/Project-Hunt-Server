@@ -15,7 +15,7 @@ namespace Hunt
 	{
 		public const int tickTime = 1000 / tickRate;
 
-		private const int tickRate = 20;
+		private const int tickRate = 1;
 
 		public static Dictionary<long, Player> players;
 
@@ -65,9 +65,7 @@ namespace Hunt
 
 			listener.PeerConnectedEvent += (peer) =>
 			{
-
-				
-
+				peer.Send(Packets.CreateInit(), DeliveryMethod.ReliableOrdered);
 			};
 
 			listener.PeerDisconnectedEvent += (peer, reason) =>
@@ -78,18 +76,7 @@ namespace Hunt
 			};
 
 			listener.NetworkReceiveEvent += (peer, data, method) =>
-			{
-				byte opCode = data.GetByte();
-
-				if(opCode == 0)	//Identification packet => (int) nameLength; (string) name; (byte[]) uuid
-				{
-					IdentificationPacket identificationPacket = Packets.GetIdentification(data.GetRemainingBytes());
-					
-
-				
-					return;
-				}
-				
+			{	
 				Player p;
 				players.TryGetValue(peer.Id, out p);
 				if (p == null)
@@ -98,7 +85,7 @@ namespace Hunt
 					return;
 				}
 
-				switch(opCode)
+				switch(data.GetByte())
 				{
 					case 1:     //Chat message packet => (int) messageLength; (string) message; (int -> cast to enum) recipients
 						string msg = Packets.GetChatMsg(data.GetRemainingBytes());
@@ -133,8 +120,8 @@ namespace Hunt
 
 					server.PollEvents();
 					Game.Update(delta);
-					//SendSnapshotToAll(TakeSnapshot());
-
+					SendSnapshotToAll(Packets.CreateSnapshot());
+				
 				watch.Stop();
 
 				delta = tickTime - (int)watch.ElapsedMilliseconds;
@@ -146,15 +133,19 @@ namespace Hunt
 
 		}
 
-		private static byte[] TakeSnapshot()
-		{
-			return new byte[] { 0 };
-		}
-
 		public static void SendToAll(NetDataWriter data, DeliveryMethod option)
 		{
 			foreach (NetPeer peer in server.GetPeers(ConnectionState.Connected))
 				peer.Send(data, option);
+		}
+
+		public static void SendSnapshotToAll(byte[] data)
+		{
+			if (data.Length == 1)
+				return;
+			
+			foreach (NetPeer peer in server.GetPeers(ConnectionState.Connected))
+				peer.Send(data, DeliveryMethod.ReliableSequenced);
 		}
 
 		private static void Log(String msg)

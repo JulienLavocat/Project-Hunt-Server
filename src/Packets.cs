@@ -44,5 +44,34 @@ namespace Hunt
 			return r.GetString();
 		}
 
+		public static NetDataWriter CreateInit()
+		{
+			NetDataWriter w = new NetDataWriter();
+
+			w.Put((byte)2);
+
+			foreach (Player p in Server.players.Values)
+			{
+				w.Put(p.TakeFullSnapshot());
+			}
+			
+			return w;
+		}
+
+		public static byte[] CreateSnapshot()
+		{
+			NetDataWriter w = new NetDataWriter();
+			w.Put((byte)3);
+			foreach (Player p in Server.players.Values)
+			{
+				if (p.includeInSnapshot != true)
+					continue;
+				w.Put(p.Snapshot());
+				p.includeInSnapshot = false;
+			}
+
+			return w.CopyData();
+		}
+
 	}
 }
