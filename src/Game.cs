@@ -64,7 +64,7 @@ namespace Hunt
 		private static bool IsTargetAssignmentRequired(long deltaTime)
 		{
 			targetAssignedSince += deltaTime;
-			return targetAssignedSince >= 10000 || targetNeverAssigned;	//Target re-assigned every 30 seconds;
+			return targetAssignedSince >= 30000 || targetNeverAssigned;	//Target re-assigned every 30 seconds;
 		}
 
 		private static void AssignTargets()

@@ -92,7 +92,11 @@ namespace Hunt
 						SendToAll(Packets.CreateChat(p.GetName(), msg), DeliveryMethod.ReliableOrdered);
 						break;
 
-					case 2:		//Position update packet => (transform/compressed) transform; (int) movedAtTick
+					case 2:     //Position update packet => (transform/compressed) transform; (int) movedAtTick
+
+						p.Move(data.GetShort(), data.GetShort(), data.GetShort());
+						p.Rotate(data.GetShort(), data.GetShort(), data.GetShort());
+
 						break;
 					case 3:		//Shoot command => (Vector3/compressed) direction; (int) shootAtTick
 						break;

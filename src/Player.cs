@@ -47,6 +47,39 @@ namespace Hunt
 
 			return w.CopyData();	//Total: 22bytes
 		}
+		public byte[] TakeFullSnapshot()
+		{
+			NetDataWriter w = new NetDataWriter();
+
+			w.Put(peer.Id);     //4
+			w.Put(name.Length); //4
+			w.Put(name);        //Variable
+			w.Put(score);       //2
+			w.Put(posX);        //2
+			w.Put(posY);        //2
+			w.Put(posZ);        //2
+			w.Put(rotX);        //2
+			w.Put(rotY);        //2
+			w.Put(rotZ);        //2
+			w.Put(health);      //4
+
+			return w.CopyData();
+		}
+
+		public void Move(short x, short y, short z)
+		{
+			posX = x;
+			posY = y;
+			posZ = z;
+			includeInSnapshot = true;
+		}
+		public void Rotate(short x, short y, short z)
+		{
+			rotX = x;
+			rotY = y;
+			rotZ = z;
+			includeInSnapshot = true;
+		}
 
 		public string GetName()
 		{
@@ -97,26 +130,6 @@ namespace Hunt
 			score += 5;
 			includeInSnapshot = true;
 		}
-
-		public byte[] TakeFullSnapshot()
-		{
-			NetDataWriter w = new NetDataWriter();
-
-			w.Put(peer.Id);     //4
-			w.Put(name.Length);	//4
-			w.Put(name);        //Variable
-			w.Put(score);		//2
-			w.Put(posX);		//2
-			w.Put(posY);		//2
-			w.Put(posZ);		//2
-			w.Put(rotX);		//2
-			w.Put(rotY);		//2
-			w.Put(rotZ);		//2
-			w.Put(health);		//4
-
-			return w.CopyData();
-		}
-
 		public void ScoreRegularKill()
 		{
 			score += 1;
@@ -127,6 +140,29 @@ namespace Hunt
 			score += 3;
 			includeInSnapshot = true;
 		}
-
+		public short GetPosX()
+		{
+			return posX;
+		}
+		public short GetPosY()
+		{
+			return posY;
+		}
+		public short GetPosZ()
+		{
+			return posZ;
+		}
+		public short GetRotX()
+		{
+			return rotX;
+		}
+		public short GetRotY()
+		{
+			return rotY;
+		}
+		public short GetRotZ()
+		{
+			return rotZ;
+		}
 	}
 }
